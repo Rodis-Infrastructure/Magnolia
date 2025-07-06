@@ -18,7 +18,6 @@ pub(crate) struct Config {
 #[derive(Deserialize, Debug)]
 pub(crate) struct RoleConfig {
     pub(crate) devforum_member: Id<RoleMarker>,
-    pub(crate) devforum_regular: Id<RoleMarker>,
     pub(crate) roblox_verified: Option<Id<RoleMarker>>,
 }
 

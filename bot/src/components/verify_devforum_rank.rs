@@ -25,6 +25,8 @@ static ROVER_API_KEY: LazyLock<String> =
 static DEVFORUM_COOKIE: LazyLock<Option<String>> =
     LazyLock::new(|| std::env::var("DEVFORUM_COOKIE").ok());
 
+const DEVFORUM_MEMBER_TRUST_LEVEL: u8 = 1; // Trust level for DevForum members
+
 #[async_trait]
 impl ComponentHandler for VerifyDevForumRank<'_> {
     fn model() -> anyhow::Result<Component> {
@@ -45,7 +47,7 @@ impl ComponentHandler for VerifyDevForumRank<'_> {
             .await?
             .roles;
 
-        // Respond early if the user doesn't have the verified role
+        // Respond early if the user doesn't have the verified role,
         // this is a quick check to avoid unnecessary API calls
         if let Some(r_id) = ctx.cfg.roles.roblox_verified {
             if !member_roles.contains(&r_id) {
@@ -125,17 +127,10 @@ async fn get_response_content(
             return "Failed to fetch your DevForum data.".to_string();
         },
     };
+    let is_member = devforum_data.user.trust_level >= DEVFORUM_MEMBER_TRUST_LEVEL;
 
     // Update the user's roles in the Discord server based on their trust level.
-    match update_user_roles(
-        guild_id,
-        author_id,
-        ctx,
-        &devforum_data.user.trust_level,
-        member_roles,
-    )
-    .await
-    {
+    match update_user_roles(guild_id, author_id, ctx, is_member, member_roles).await {
         Ok(()) => format!(
             "Successfully updated your roles to match your DevForum trust level: `{}`",
             devforum_data.user.trust_level
@@ -278,23 +273,31 @@ async fn fetch_devforum_data(
 /// * `guild_id` - The ID of the Discord server.
 /// * `user_id` - The ID of the Discord user.
 /// * `state` - The state of the bot.
-/// * `trust_level` - The trust level of the user.
+/// * `is_member` - Whether the user is a DevForum member.
 async fn update_user_roles(
     guild_id: Id<GuildMarker>,
     user_id: Id<UserMarker>,
     state: &crate::Context,
-    trust_level: &DevForumTrustLevel,
+    is_member: bool,
     mut member_roles: Vec<Id<RoleMarker>>,
 ) -> anyhow::Result<()> {
-    let roles = trust_level.roles(&state.cfg);
-    // Remove the roles that are no longer applicable
-    member_roles.retain(|role_id| !roles.remove.contains(role_id));
+    let member_role_pos = member_roles
+        .iter()
+        .position(|&r| r == state.cfg.roles.devforum_member);
 
-    // Add the role if it is not already present
-    if let Some(role_id) = roles.add {
-        if !member_roles.contains(&role_id) {
-            member_roles.push(role_id);
-        }
+    match (is_member, member_role_pos) {
+        (true, None) => {
+            // If the user is a member but doesn't have the role, add it
+            member_roles.push(state.cfg.roles.devforum_member);
+        },
+        (false, Some(pos)) => {
+            // If the user is not a member but has the role, remove it
+            member_roles.remove(pos);
+        },
+        _ => {
+            // If the user is a member and has the role, do nothing
+            return Ok(());
+        },
     }
 
     // Update the guild member with the new roles
@@ -341,50 +344,10 @@ struct DevForumAPIResponse {
 
 #[derive(Deserialize)]
 struct DevForumUser {
-    trust_level: DevForumTrustLevel,
-}
-
-#[derive(Deserialize_repr, Debug)]
-#[repr(u8)]
-enum DevForumTrustLevel {
-    Visitor = 0,
-    Member = 1,
-    Regular = 2,
-    Staff,
+    trust_level: u8,
 }
 
 struct RoleData {
     add: Option<Id<RoleMarker>>,
-    remove: Vec<Id<RoleMarker>>,
-}
-
-impl DevForumTrustLevel {
-    /// Returns the roles to add and remove based on the trust level.
-    fn roles(&self, cfg: &crate::Config) -> RoleData {
-        match self {
-            DevForumTrustLevel::Visitor => RoleData {
-                add: None,
-                remove: vec![cfg.roles.devforum_member, cfg.roles.devforum_regular],
-            },
-            DevForumTrustLevel::Member => RoleData {
-                add: Some(cfg.roles.devforum_member),
-                remove: vec![cfg.roles.devforum_regular],
-            },
-            DevForumTrustLevel::Regular | DevForumTrustLevel::Staff => RoleData {
-                add: Some(cfg.roles.devforum_regular),
-                remove: vec![cfg.roles.devforum_member],
-            },
-        }
-    }
-}
-
-impl std::fmt::Display for DevForumTrustLevel {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            DevForumTrustLevel::Visitor => write!(f, "Visitor"),
-            DevForumTrustLevel::Member => write!(f, "Member"),
-            DevForumTrustLevel::Regular => write!(f, "Regular"),
-            DevForumTrustLevel::Staff => write!(f, "Staff"),
-        }
-    }
+    remove: Option<Id<RoleMarker>>,
 }
