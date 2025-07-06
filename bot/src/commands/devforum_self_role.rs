@@ -49,11 +49,9 @@ impl CommandHandler for DevForumSelfRole<'_> {
                 "Click the `Update Roles` button below to claim your developer forum member role if you meet the eligibility criteria.
 
 - <@&{}> - Your **trust level** on the Roblox developer forum is `Member` (not to be confused with `Visitor`)
-- <@&{}> - Your **trust level** on the Roblox developer forum is `Regular`
 - What is the developer forum? [**Learn more**](https://help.roblox.com/hc/articles/360000240223)
 - How do I \"level up\"? [**Learn more**](https://devforum.roblox.com/t/3170997)",
                 ctx.cfg.roles.devforum_member,
-                ctx.cfg.roles.devforum_regular
             ))
             .thumbnail(ImageSource::attachment(&devforum_logo.filename)?)
             .build();

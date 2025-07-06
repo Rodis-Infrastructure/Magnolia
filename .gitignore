@@ -1,5 +1,15 @@
+# Build directory
 /target
+
+# IDE config directory
 .idea
+
+# Environment files
 .env
+
+# Local config files
 magnolia.cfg.yml
 magnolia.cfg.*.yml
+
+# Database files
+*.sqlite
