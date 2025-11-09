@@ -3,9 +3,10 @@ mod components;
 mod config;
 mod modals;
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use anyhow::Context as _;
+use rusqlite::Connection;
 use twilight_cache_inmemory::{DefaultInMemoryCache, ResourceType};
 use twilight_gateway::{Event, EventTypeFlags, Intents, Shard, ShardId, StreamExt as _};
 use twilight_http::Client as HttpClient;
@@ -13,11 +14,16 @@ use twilight_model::application::interaction::InteractionData;
 
 use crate::config::Config;
 
+mod embedded {
+    refinery::embed_migrations!("../db/migrations");
+}
+
 #[derive(Clone)]
 pub(crate) struct Context {
     http: Arc<HttpClient>,
     cfg: Arc<Config>,
     request: Arc<reqwest::Client>,
+    conn: Arc<Mutex<Connection>>,
 }
 
 fn validate_config() -> anyhow::Result<()> {
@@ -26,6 +32,19 @@ fn validate_config() -> anyhow::Result<()> {
         .unwrap_or_else(|| "magnolia.cfg.yml".to_string());
     config::load_config(path)?;
     Ok(())
+}
+
+fn establish_connection() -> anyhow::Result<Connection> {
+    let db_path = std::env::var("DB_PATH").context("get DB_PATH env")?;
+    let mut conn = Connection::open(&db_path)?;
+    tracing::info!("established database connection at {db_path}");
+
+    // Apply migrations
+    embedded::migrations::runner().run(&mut conn)?;
+    // Enable foreign key constraints.
+    conn.execute("PRAGMA foreign_keys = ON", [])?;
+    tracing::info!("finished applying database migrations");
+    Ok(conn)
 }
 
 #[tokio::main]
@@ -59,11 +78,15 @@ async fn main() -> anyhow::Result<()> {
     let cfg = Arc::new(config::load_config(config::config_path())?);
     let req_client = Arc::new(reqwest::Client::new());
 
+    let conn = establish_connection().context("establish database connection")?;
+    let conn = Arc::new(Mutex::new(conn));
+
     // Initialize the state.
     let state = Context {
         http: http.clone(),
         cfg: cfg.clone(),
         request: req_client.clone(),
+        conn: conn.clone(),
     };
 
     handle_event_wrapper(shard, cache, state).await?;
@@ -146,6 +169,7 @@ async fn handle_event(event: Event, ctx: Context) -> anyhow::Result<()> {
                 // },
                 _ => anyhow::bail!("unsupported interaction type"),
             };
+
             Ok(())
         },
         _ => Ok(()),

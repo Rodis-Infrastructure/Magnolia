@@ -13,6 +13,8 @@ use twilight_util::builder::command::CommandBuilder;
 
 use crate::commands::CommandHandler;
 
+pub(super) const FAQ_CMD_NAME: &str = "faq";
+
 const QUERY_OPTION_NAME: &str = "query";
 const MENTION_OPTION_NAME: &str = "mention";
 

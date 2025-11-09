@@ -8,6 +8,7 @@ A `magnolia.cfg.yml` file, or whatever path is passed as argument the first argu
 repository. This file contains the configuration for the bot.
 The following is an example of the file structure:
 
+`magnolia.cfg.yml`
 ```yaml
 roles:
   devforum_member: "ROLE_ID"
@@ -15,5 +16,9 @@ roles:
   # Optional, allows the bot to avoid making unnecessary API calls
   roblox_verified: "ROLE_ID"
 ```
+
+---
+
+The bot also requires a `.env` file at the root of the repository. See [`.example.env`](./.example.env) for an example.
 
 [ci badge]:https://img.shields.io/github/actions/workflow/status/archasion/discord-bot-rs/ci.yml?branch=main&event=push&label=CI

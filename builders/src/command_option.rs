@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::sync::LazyLock;
 
 use anyhow::Context;
@@ -24,22 +25,19 @@ pub struct CommandOptionBuilder(CommandOption);
 
 impl CommandOptionBuilder {
     /// Create a new [`CommandOption`] builder.
-    pub fn new<S>(name: S, description: S, kind: CommandOptionType) -> Self
-    where
-        S: Into<String>,
-    {
+    pub fn new(name: impl Display, description: impl Display, kind: CommandOptionType) -> Self {
         Self(CommandOption {
             autocomplete: None,
             channel_types: None,
             choices: None,
-            description: description.into(),
+            description: description.to_string(),
             description_localizations: None,
             kind,
             max_length: None,
             max_value: None,
             min_length: None,
             min_value: None,
-            name: name.into(),
+            name: name.to_string(),
             name_localizations: None,
             options: None,
             required: None,
@@ -81,30 +79,30 @@ impl CommandOptionBuilder {
     }
 
     /// Set the description localizations for the option.
-    pub fn description_localizations<I, S>(mut self, localizations: I) -> Self
+    pub fn description_localizations<I, D>(mut self, localizations: I) -> Self
     where
-        I: IntoIterator<Item = (Locale, S)>,
-        S: Into<String>,
+        I: IntoIterator<Item = (Locale, D)>,
+        D: Display,
     {
         self.0.description_localizations = Some(
             localizations
                 .into_iter()
-                .map(|(k, v)| (k.to_string(), v.into()))
+                .map(|(k, v)| (k.to_string(), v.to_string()))
                 .collect(),
         );
         self
     }
 
     /// Set the name localizations for the option.
-    pub fn name_localizations<I, S>(mut self, localizations: I) -> Self
+    pub fn name_localizations<I, D>(mut self, localizations: I) -> Self
     where
-        I: IntoIterator<Item = (Locale, S)>,
-        S: Into<String>,
+        I: IntoIterator<Item = (Locale, D)>,
+        D: Display,
     {
         self.0.name_localizations = Some(
             localizations
                 .into_iter()
-                .map(|(k, v)| (k.to_string(), v.into()))
+                .map(|(k, v)| (k.to_string(), v.to_string()))
                 .collect(),
         );
         self

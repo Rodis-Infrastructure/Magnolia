@@ -16,6 +16,8 @@ use crate::commands::CommandHandler;
 use crate::components::verify_devforum_rank::VerifyDevForumRank;
 use crate::components::ComponentHandler;
 
+pub(super) const DEVFORUM_SELF_ROLE_CMD_NAME: &str = "devforum-self-role";
+
 #[allow(dead_code)]
 pub(crate) struct DevForumSelfRole<'a> {
     pub(crate) cmd: &'a Interaction,

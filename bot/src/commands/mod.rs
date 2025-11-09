@@ -5,6 +5,7 @@ use twilight_model::application::interaction::Interaction;
 mod config;
 mod devforum_self_role;
 mod faq;
+mod highlight;
 
 /// Get all application command models.
 pub(crate) fn models(ctx: crate::Context) -> anyhow::Result<Vec<Command>> {
@@ -12,6 +13,7 @@ pub(crate) fn models(ctx: crate::Context) -> anyhow::Result<Vec<Command>> {
         devforum_self_role::DevForumSelfRole::model(None)?,
         config::Config::model(None)?,
         faq::Faq::model(Some(ctx))?,
+        highlight::Highlight::model(None)?,
     ])
 }
 
@@ -30,9 +32,12 @@ pub(crate) async fn handle_command(
     ctx: crate::Context,
 ) -> anyhow::Result<()> {
     let handler: Box<dyn CommandHandler> = match cmd_name {
-        "devforum-self-role" => Box::new(devforum_self_role::DevForumSelfRole { cmd }),
-        "config" => Box::new(config::Config { cmd }),
-        "faq" => Box::new(faq::Faq { cmd }),
+        devforum_self_role::DEVFORUM_SELF_ROLE_CMD_NAME => {
+            Box::new(devforum_self_role::DevForumSelfRole { cmd })
+        },
+        config::CONFIG_CMD_NAME => Box::new(config::Config { cmd }),
+        faq::FAQ_CMD_NAME => Box::new(faq::Faq { cmd }),
+        highlight::HIGHLIGHT_CMD_NAME => Box::new(highlight::Highlight { cmd }),
         unknown => anyhow::bail!("unknown command name: {}", unknown),
     };
     handler.exec(ctx).await

@@ -21,6 +21,8 @@ use twilight_util::builder::InteractionResponseDataBuilder;
 use crate::commands::CommandHandler;
 use crate::config::config_path;
 
+pub(super) const CONFIG_CMD_NAME: &str = "config";
+
 #[allow(dead_code)]
 pub(crate) struct Config<'a> {
     pub(crate) cmd: &'a Interaction,

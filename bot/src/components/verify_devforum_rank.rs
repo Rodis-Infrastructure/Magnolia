@@ -5,7 +5,6 @@ use async_trait::async_trait;
 use builders::component::ButtonBuilder;
 use reqwest::header::{AUTHORIZATION, COOKIE};
 use serde::Deserialize;
-use serde_repr::Deserialize_repr;
 use twilight_model::application::interaction::Interaction;
 use twilight_model::channel::message::component::ButtonStyle;
 use twilight_model::channel::message::{Component, MessageFlags};
@@ -345,9 +344,4 @@ struct DevForumAPIResponse {
 #[derive(Deserialize)]
 struct DevForumUser {
     trust_level: u8,
-}
-
-struct RoleData {
-    add: Option<Id<RoleMarker>>,
-    remove: Option<Id<RoleMarker>>,
 }
